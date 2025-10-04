@@ -55,7 +55,7 @@ const GameTooltip = ({ game, gameInfo }) => {
   );
 };
 
-const OwnedGamesList = ({ games, selectedTable, onGameClick, gamesManager, onOpenTrade }) => {
+const OwnedGamesList = ({ games, selectedTable, onGameClick, gamesManager, onOpenTrade, recommendList, onOpenManageRecommendList }) => {
   const hasSelectedTable = selectedTable !== null && selectedTable !== undefined;
   const [hoveredGame, setHoveredGame] = useState(null);
 
@@ -74,13 +74,28 @@ const OwnedGamesList = ({ games, selectedTable, onGameClick, gamesManager, onOpe
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-2xl font-bold">{TEXTS.ui.ownedGames} ({games.length}개)</h2>
-        <button
-          onClick={onOpenTrade}
-          className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-500 hover:to-yellow-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2"
-        >
-          🔄 중고거래
-        </button>
+        <div>
+          <h2 className="text-2xl font-bold">🎲 보유 게임 목록 ({games.length}개)</h2>
+          {recommendList && recommendList.length > 0 && (
+            <p className="text-sm text-yellow-400 mt-1">
+              ⭐ 추천 리스트: {recommendList.length}/5개 등록됨
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onOpenTrade}
+            className="bg-gradient-to-r from-orange-600 to-yellow-600 hover:from-orange-500 hover:to-yellow-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2"
+          >
+            🔄 중고거래
+          </button>
+          <button
+            onClick={onOpenManageRecommendList}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2"
+          >
+            ⭐ 추천게임 바꾸기
+          </button>
+        </div>
       </div>
 
       {/* 안내 메시지 */}
@@ -103,23 +118,19 @@ const OwnedGamesList = ({ games, selectedTable, onGameClick, gamesManager, onOpe
               const gameInfo = getGameInfo(game.name);
 
               const isWornOut = game.recommendCount === mostRecommendedCount && mostRecommendedCount >= 10;
+              const isInRecommendList = recommendList && recommendList.some(g => g.name === game.name);
 
               return (
                 <div key={idx} className="relative">
                   <button
-                    onClick={() => hasSelectedTable && onGameClick && onGameClick(game)}
                     onMouseEnter={() => setHoveredGame(game.name)}
                     onMouseLeave={() => setHoveredGame(null)}
-                    disabled={!hasSelectedTable}
                     className={`
                       bg-gradient-to-r ${DIFFICULTY_COLORS[game.difficulty]}
                       px-3 py-2 rounded-full text-sm font-medium
                       transition-all duration-200 flex items-center gap-1 relative
-                      ${hasSelectedTable
-                        ? 'cursor-pointer hover:scale-110 hover:shadow-lg'
-                        : 'opacity-50 cursor-not-allowed'
-                      }
                       ${isWornOut ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-gray-900' : ''}
+                      ${isInRecommendList ? 'ring-2 ring-yellow-400' : ''}
                     `}
                   >
                     <span>{game.icon || '🎲'}</span>
@@ -136,6 +147,11 @@ const OwnedGamesList = ({ games, selectedTable, onGameClick, gamesManager, onOpe
                     {/* 낡음 표시 */}
                     {isWornOut && (
                       <span className="absolute -top-1 -right-1 text-xs">⚠️</span>
+                    )}
+
+                    {/* 추천 리스트 포함 표시 */}
+                    {isInRecommendList && (
+                      <span className="ml-1 text-yellow-400">⭐</span>
                     )}
                   </button>
 

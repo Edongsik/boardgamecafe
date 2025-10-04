@@ -92,15 +92,10 @@ class GamesManager {
     return this.gamesPool.filter(g => g.genre === genre);
   }
 
-  // 조건 충족한 구매 가능 게임만 반환
+  // 조건 충족한 구매 가능 게임만 반환 (중복 구매 허용)
   getUnlockedPurchasableGames(gameState) {
     return this.purchasableGamesPool.filter(game => {
-      // 이미 보유한 게임은 제외
-      if (this.hasGame(game.name)) {
-        return false;
-      }
-
-      // 잠금 해제 조건 확인
+      // 잠금 해제 조건 확인 (이미 보유한 게임도 재구매 가능)
       switch (game.unlockCondition) {
         case 'always':
           return true;
@@ -235,21 +230,23 @@ class GamesManager {
 
   // 🆕 가장 많이 추천된 게임 찾기
   getMostRecommendedGame() {
-    if (this.ownedGames.length <= 2) {
-      console.log('⚠️ 게임이 2개 이하이므로 폐기하지 않습니다.');
+    console.log('🔍 getMostRecommendedGame called');
+    console.log('Owned games length:', this.ownedGames.length);
+    console.log('Owned games:', this.ownedGames.map(g => ({ name: g.name, recommendCount: g.recommendCount || 0 })));
+
+    if (this.ownedGames.length === 0) {
+      console.log('⚠️ 보유 게임이 없으므로 폐기할 게임이 없습니다.');
       return null;
     }
 
-    const mostUsed = this.ownedGames.reduce((max, game) =>
-      (game.recommendCount || 0) > (max.recommendCount || 0) ? game : max
-    );
+    const mostUsed = this.ownedGames.reduce((max, game) => {
+      const maxCount = max.recommendCount || 0;
+      const gameCount = game.recommendCount || 0;
+      console.log(`Comparing: ${max.name}(${maxCount}) vs ${game.name}(${gameCount})`);
+      return gameCount > maxCount ? game : max;
+    });
 
-    // 최소 10회 이상 추천된 게임만 폐기 대상
-    if (mostUsed.recommendCount < 10) {
-      console.log('⚠️ 가장 많이 사용된 게임도 10회 미만이므로 폐기하지 않습니다.');
-      return null;
-    }
-
+    console.log('✅ Most used game:', mostUsed.name, 'with count:', mostUsed.recommendCount || 0);
     return mostUsed;
   }
 

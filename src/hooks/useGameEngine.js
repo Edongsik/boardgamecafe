@@ -6,6 +6,7 @@ import GamesManager from '../managers/GamesManager';
 import RegularsManager from '../managers/RegularsManager';
 import ReviewsManager from '../managers/ReviewsManager';
 import CommunityManager from '../managers/CommunityManager';
+import BuffManager from '../managers/BuffManager';
 
 // Config & Data
 import { GAME_CONFIG, TIME_CONFIG, ECONOMY_CONFIG } from '../config/gameConfig';
@@ -20,6 +21,7 @@ export const useGameEngine = () => {
   const regularsManagerRef = useRef(new RegularsManager());
   const reviewsManagerRef = useRef(new ReviewsManager());
   const communityManagerRef = useRef(new CommunityManager());
+  const buffManagerRef = useRef(new BuffManager());
 
   // --- 일시정지 추적 ---
   const pausedByTable = useRef(false);
@@ -48,10 +50,15 @@ export const useGameEngine = () => {
   const [newVisitorBoost, setNewVisitorBoost] = useState({ active: false, multiplier: 1, daysRemaining: 0 });
   const [permanentEventBonus, setPermanentEventBonus] = useState(0);
   const [permanentDiscountRate, setPermanentDiscountRate] = useState(0);
+  const [perfectServiceBonus, setPerfectServiceBonus] = useState(false);
+
+  // --- 게임 추천 시스템 상태 ---
+  const [recommendList, setRecommendList] = useState([]); // 최대 5개
+  const [selectedGameInfo, setSelectedGameInfo] = useState(null); // 아코디언에서 선택한 게임
 
   // --- UI 상태 ---
   const [modalState, setModalState] = useState({
-    event: false, gamePurchase: false, result: false, eventSelection: false, regularNews: false, reviews: false, tradeGames: false, communityNews: false,
+    event: false, gamePurchase: false, result: false, eventSelection: false, regularNews: false, reviews: false, tradeGames: false, communityNews: false, manageRecommendList: false, gameRecommend: false,
   });
   const [selectedTable, setSelectedTable] = useState(null);
   const [resultData, setResultData] = useState({ type: 'neutral', title: '', content: '' });
@@ -63,67 +70,6 @@ export const useGameEngine = () => {
   const lastVisitorMilestone = useRef(0);
   const lastCommunityWeek = useRef(0);
 
-  // --- 방문자 마일스톤 설정 ---
-  const visitorMilestones = [
-    {
-      visitors: 50,
-      type: 'buzz',
-      reward: {
-        satisfaction: 5,
-        message: '🎉 입소문 효과',
-        description: '첫 50명 방문 달성!\n입소문이 퍼지며 카페 분위기가 좋아졌습니다.'
-      }
-    },
-    {
-      visitors: 100,
-      type: 'first_hundred',
-      reward: {
-        funds: 500000,
-        regulars: 1,
-        discardGame: true,
-        message: '💯 첫 100명 달성',
-        description: '축하합니다! 100명 방문 달성!\n보상: 자금 +₩500,000, 단골손님 +1명'
-      }
-    },
-    {
-      visitors: 200,
-      type: 'media',
-      reward: {
-        newVisitorBoost: { multiplier: 1.5, duration: 3 },
-        message: '📰 지역 언론 보도',
-        description: '지역 언론에 소개되었습니다!\n3일간 신규 방문자 1.5배 증가'
-      }
-    },
-    {
-      visitors: 300,
-      type: 'bonus_game',
-      reward: {
-        freeGame: true,
-        discardGame: true,
-        message: '🎁 무료 게임 획득',
-        description: '300명 방문 달성!\n랜덤 게임 1개 무료 획득'
-      }
-    },
-    {
-      visitors: 500,
-      type: 'permanent_bonus',
-      reward: {
-        permanentEventBonus: 10,
-        regulars: 2,
-        message: '⭐ 명성 확립',
-        description: '500명 방문 달성!\n영구 이벤트 성공률 +10%, 단골손님 +2명'
-      }
-    },
-    {
-      visitors: 1000,
-      type: 'legendary',
-      reward: {
-        permanentDiscountRate: 10,
-        message: '🏆 전설의 카페',
-        description: '1000명 방문 달성!\n영구 게임 구매 할인 10%, 게임 종료 또는 엔딩 메시지'
-      }
-    }
-  ];
 
   const gameTickCallback = useRef(() => {});
 
@@ -244,9 +190,17 @@ useEffect(() => {
     const totalSatisfaction = currentTables.reduce((sum, table) => table.occupied ? sum + table.satisfaction : sum, 0);
     setRevenue(prev => prev + totalSatisfaction * 2000);
 
-    const perfectSatisfactionTables = currentTables.filter(t => t.occupied && t.satisfaction === 5).length;
-    const unhappyTables = currentTables.filter(t => t.occupied && t.satisfaction <= 2).length;
+    const occupiedTables = currentTables.filter(t => t.occupied);
+    const perfectSatisfactionTables = occupiedTables.filter(t => t.satisfaction === 5).length;
+    const unhappyTables = occupiedTables.filter(t => t.satisfaction <= 2).length;
     const emptyTables = currentTables.filter(t => !t.occupied).length;
+
+    // 퍼펙트 서비스 버프 체크 (모든 점유 테이블의 만족도가 5)
+    const allPerfect = occupiedTables.length > 0 && occupiedTables.every(t => t.satisfaction === 5);
+    console.log('Occupied tables:', occupiedTables.length);
+    console.log('All perfect?', allPerfect);
+    console.log('Satisfactions:', occupiedTables.map(t => t.satisfaction));
+    setPerfectServiceBonus(allPerfect);
 
     const satisfactionBonus = perfectSatisfactionTables * 0.3;
 
@@ -316,6 +270,11 @@ useEffect(() => {
 
       // 평점 상승 시 구간별 저항 적용
       if (satisfactionChange > 0) {
+        // 퍼펙트 서비스 보너스 (평점 상승 시 10% 추가)
+        if (allPerfect) {
+          satisfactionChange *= 1.1;
+        }
+
         if (currentRating >= 8) {
           satisfactionChange *= 0.5; // 평점 8+: 상승폭 50% 감소
         } else if (currentRating >= 7) {
@@ -362,6 +321,14 @@ useEffect(() => {
           }
       }
     }
+
+    // 🆕 버프 만료 체크
+    const expiredBuffs = buffManagerRef.current.checkExpiry(day);
+    if (expiredBuffs.length > 0) {
+      expiredBuffs.forEach(buff => {
+        console.log('⏰ 효과 만료:', buff.name);
+      });
+    }
   };
 });
 
@@ -377,7 +344,15 @@ useEffect(() => {
         ]);
 
         setIsRegularsLoaded(true);
-        setOwnedGames(gamesManagerRef.current.getOwnedGames());
+        const initialGames = gamesManagerRef.current.getOwnedGames();
+        setOwnedGames(initialGames);
+
+        // 초기 추천 리스트에 랜덤 게임 1개 추가
+        if (initialGames.length > 0) {
+          const randomGame = initialGames[Math.floor(Math.random() * initialGames.length)];
+          setRecommendList([randomGame]);
+          console.log('🎲 초기 추천 게임:', randomGame.name);
+        }
 
         // 초기 주차 트렌딩 게임 업데이트
         const initialWeek = 1;
@@ -448,14 +423,30 @@ useEffect(() => {
       const trendingGames = communityManagerRef.current.updateTrendingGames(currentWeek);
       const news = communityManagerRef.current.getCurrentNews();
 
-      // 새 소식 알림
+      // 🆕 기존 커뮤니티 버프 제거
+      buffManagerRef.current.removeBuffsBySource('community_trending');
+
+      // 🆕 트렌딩 게임 버프 추가
+      const ownedTrendingGames = gamesManagerRef.current.getOwnedGames()
+        .filter(game => communityManagerRef.current.isTrendingGame(game.name));
+
+      if (ownedTrendingGames.length > 0) {
+        buffManagerRef.current.addBuff({
+          type: 'community',
+          category: 'positive',
+          name: '🔥 트렌딩 게임 보유',
+          description: `${ownedTrendingGames.map(g => g.name).join(', ')} 보유 중 - 평점 하락 방지`,
+          icon: '🔥',
+          value: 0,
+          startDay: day,
+          duration: 7,
+          source: 'community_trending'
+        });
+      }
+
+      // 팝업 알림 제거, Day 카드에 뱃지만 표시
       if (news.length > 0) {
         setHasNewCommunityNews(true);
-
-        setTimeout(() => {
-          showResult('neutral', '📰 새로운 커뮤니티 소식',
-            `Week ${currentWeek} 소식이 업데이트되었습니다.\nDay를 클릭하여 확인하세요!`);
-        }, 1000);
       }
     }
   }, [day, revenue, regularNewsBonusDays]);
@@ -466,86 +457,114 @@ useEffect(() => {
     setIsPaused(shouldPause);
   }, [modalState, selectedTable]);
 
+  // 🎯 누적 방문자 마일스톤 효과 (100명 단위)
   useEffect(() => {
-    // 방문자 마일스톤 체크
-    for (const milestone of visitorMilestones) {
-      if (totalVisitors >= milestone.visitors && lastVisitorMilestone.current < milestone.visitors) {
-        lastVisitorMilestone.current = milestone.visitors;
+    const currentMilestone = Math.floor(totalVisitors / 100);
 
-        const reward = milestone.reward;
-        let resultContent = reward.description;
+    // 100명 단위 긍정적 효과
+    if (currentMilestone > lastVisitorMilestone.current && totalVisitors >= 100) {
+      lastVisitorMilestone.current = currentMilestone;
 
-        // 만족도 증가
-        if (reward.satisfaction) {
-          setSatisfaction(prev => Math.min(100, prev + reward.satisfaction));
-        }
+      const milestoneCount = currentMilestone; // 1, 2, 3, 4...
 
-        // 자금 증가
-        if (reward.funds) {
-          setFunds(prev => prev + reward.funds);
-        }
+      // 📊 마일스톤 달성 보상
+      const bonusRevenue = 50000 * milestoneCount; // 5만원씩 증가
+      const bonusRegulars = Math.floor(milestoneCount / 2); // 200명당 단골 1명
+      const bonusSatisfaction = 2; // 만족도 +2
 
-        // 단골손님 증가
-        if (reward.regulars) {
-          setRegulars(prev => {
-            const newCount = prev + reward.regulars;
-            for (let i = 0; i < reward.regulars; i++) {
-              regularsManagerRef.current.addRegular();
-            }
-            return newCount;
+      setRevenue(prev => prev + bonusRevenue);
+      if (bonusRegulars > 0) {
+        setRegulars(prev => prev + bonusRegulars);
+      }
+      setSatisfaction(prev => Math.min(100, prev + bonusSatisfaction));
+
+      // 🆕 버프 매니저에 마일스톤 버프 추가 (30초 후 자동 제거)
+      const buffId = buffManagerRef.current.addBuff({
+        type: 'milestone',
+        category: 'positive',
+        name: `🎯 방문자 ${totalVisitors}명 달성!`,
+        description: `매출 +₩${bonusRevenue.toLocaleString()}, 만족도 +${bonusSatisfaction}${bonusRegulars > 0 ? `, 단골 +${bonusRegulars}명` : ''}`,
+        icon: '🎯',
+        value: 0,
+        startDay: day,
+        duration: 1, // 1일로 설정하지만 타이머로 제거
+        source: `milestone_${totalVisitors}`
+      });
+
+      // 30초 후 자동 제거
+      setTimeout(() => {
+        buffManagerRef.current.removeBuffById(buffId.id);
+      }, 30000);
+
+      showResult('immediate', `🎉 누적 방문자 ${totalVisitors}명 달성!`,
+        `마일스톤 보상을 받았습니다!\n\n` +
+        `💰 매출: +₩${bonusRevenue.toLocaleString()}\n` +
+        `⭐ 만족도: +${bonusSatisfaction}%\n` +
+        (bonusRegulars > 0 ? `👥 단골손님: +${bonusRegulars}명\n` : '') +
+        `\n계속해서 성장하는 보드게임 카페!`
+      );
+    }
+  }, [totalVisitors, day]);
+
+  // 🗑️ 게임 폐기 시스템 (150명부터 100명 단위)
+  useEffect(() => {
+    // 150, 250, 350, 450... 체크
+    if (totalVisitors < 150) return;
+
+    const deleteThreshold = Math.floor((totalVisitors - 50) / 100) * 100 + 50;
+
+    // 정확히 해당 구간에 도달했을 때만 실행
+    if (totalVisitors >= deleteThreshold && totalVisitors < deleteThreshold + 10) {
+      const deleteCount = Math.floor((totalVisitors - 100) / 100);
+
+      // 이미 이 구간에서 삭제했는지 체크
+      const deletionKey = `deletion_${deleteThreshold}`;
+      if (sessionStorage.getItem(deletionKey)) {
+        return;
+      }
+      sessionStorage.setItem(deletionKey, 'done');
+
+      const deletedGames = [];
+      for (let i = 0; i < deleteCount; i++) {
+        const mostUsed = gamesManagerRef.current.getMostRecommendedGame();
+        if (mostUsed) {
+          deletedGames.push({
+            name: mostUsed.name,
+            recommendCount: mostUsed.recommendCount
           });
+          gamesManagerRef.current.removeGame(mostUsed.name);
+        } else {
+          break;
         }
+      }
 
-        // 게임 폐기
-        if (reward.discardGame) {
-          const mostUsed = gamesManagerRef.current.getMostRecommendedGame();
-          if (mostUsed) {
-            gamesManagerRef.current.removeGame(mostUsed.name);
-            setOwnedGames(gamesManagerRef.current.getOwnedGames());
-            resultContent += `\n\n🗑️ ${mostUsed.name} 폐기 (추천 ${mostUsed.recommendCount}회)`;
-          }
-        }
+      if (deletedGames.length > 0) {
+        setOwnedGames(gamesManagerRef.current.getOwnedGames());
 
-        // 신규 방문자 부스트
-        if (reward.newVisitorBoost) {
-          setNewVisitorBoost({
-            active: true,
-            multiplier: reward.newVisitorBoost.multiplier,
-            daysRemaining: reward.newVisitorBoost.duration
-          });
-        }
+        const gamesList = deletedGames.map(g => `• ${g.name} (${g.recommendCount}회 추천)`).join('\n');
 
-        // 무료 게임
-        if (reward.freeGame) {
-          const availableGames = gamesManagerRef.current.getPurchasableGames({
-            day,
-            totalVisitors,
-            satisfaction,
-            regulars
-          });
-          if (availableGames.length > 0) {
-            const randomGame = availableGames[Math.floor(Math.random() * availableGames.length)];
-            gamesManagerRef.current.addGame({ name: randomGame.name, difficulty: randomGame.difficulty || 3 });
-            setOwnedGames(gamesManagerRef.current.getOwnedGames());
-            resultContent += `\n\n🎁 ${randomGame.name} 획득!`;
-          }
-        }
+        // 🆕 버프 매니저에 폐기 알림 추가
+        buffManagerRef.current.addBuff({
+          type: 'milestone',
+          category: 'negative',
+          name: `🗑️ 게임 ${deletedGames.length}개 폐기`,
+          description: `${deletedGames.map(g => g.name).join(', ')} 폐기됨`,
+          icon: '🗑️',
+          value: 0,
+          startDay: day,
+          duration: 3, // 3일간 표시
+          source: `deletion_${totalVisitors}`
+        });
 
-        // 영구 이벤트 보너스
-        if (reward.permanentEventBonus) {
-          setPermanentEventBonus(reward.permanentEventBonus);
-        }
-
-        // 영구 할인율
-        if (reward.permanentDiscountRate) {
-          setPermanentDiscountRate(reward.permanentDiscountRate);
-        }
-
-        showResult('immediate', reward.message, resultContent);
-        break;
+        showResult('warning', `🗑️ 게임 ${deletedGames.length}개 폐기`,
+          `누적 방문자 ${totalVisitors}명 달성!\n` +
+          `다음 게임들이 너무 많이 사용되어 낡았습니다:\n\n` +
+          `${gamesList}\n\n` +
+          `💡 힌트: 중고거래를 통해 새 게임으로 교환할 수 있습니다!`
+        );
       }
     }
-  }, [totalVisitors]);
+  }, [totalVisitors, day]);
 
 
   // --- 이벤트 핸들러 ---
@@ -923,6 +942,19 @@ const executeEvent = (eventType) => {
       setRegularNewsBonus(result.bonus.bonusValue);
       setRegularNewsBonusDays(currentRegularNews.duration);
 
+      // 🆕 버프 매니저에 등록
+      buffManagerRef.current.addBuff({
+        type: 'regular',
+        category: 'positive',
+        name: `${currentRegularNews.regularName}의 조언`,
+        description: currentRegularNews.acceptBenefit,
+        icon: '👥',
+        value: result.bonus.bonusValue,
+        startDay: day,
+        duration: currentRegularNews.duration,
+        source: `regular_${currentRegularNews.regularId}`
+      });
+
       showResult('immediate', '✅ 뉴스 수락',
         `${currentRegularNews.message}\n\n📊 효과: ${currentRegularNews.acceptBenefit}\n보너스: +${result.bonus.bonusValue}% (${currentRegularNews.duration}일간)`
       );
@@ -996,6 +1028,40 @@ const executeEvent = (eventType) => {
   const handlePauseToggle = () => setIsPaused(p => !p);
   const handleSpeedChange = () => setGameSpeed(s => (s === 1 ? TIME_CONFIG.GAME_SPEED_MULTIPLIER : 1));
 
+  // --- 게임 추천 시스템 핸들러 ---
+  const handleOpenManageRecommendList = () => {
+    openModal('manageRecommendList');
+  };
+
+  const handleSaveRecommendList = (selectedGames) => {
+    if (selectedGames.length < 1 || selectedGames.length > 5) {
+      showResult('warning', '⚠️ 선택 오류', '추천 리스트는 최소 1개, 최대 5개까지 등록할 수 있습니다.');
+      return;
+    }
+
+    setRecommendList(selectedGames);
+    closeModal('manageRecommendList');
+    showResult('immediate', '✅ 추천 리스트 저장 완료', `${selectedGames.length}개 게임이 등록되었습니다.`);
+  };
+
+  const handleOpenGameRecommend = () => {
+    // 빈 배열도 모달 열기 허용 (모달 내부에서 안내 메시지 표시)
+    openModal('gameRecommend');
+  };
+
+  const handleRecommendFromList = (game) => {
+    if (!selectedTable) {
+      showResult('warning', '⚠️ 테이블 미선택', '게임을 추천할 테이블을 먼저 선택해주세요.');
+      return;
+    }
+
+    // 기존 handleRecommendGame 로직 재사용
+    handleRecommendGame(game);
+
+    // 추천 후 모달 닫기
+    closeModal('gameRecommend');
+  };
+
   // --- UI에 전달할 최종 데이터 ---
   const uniqueGames = gamesManagerRef.current.getUniqueOwnedGames();
   const currentWeeklyGame = weeklyGames[weeklyGameIndex % weeklyGames.length];
@@ -1006,7 +1072,7 @@ const executeEvent = (eventType) => {
     totalVisitors,
     satisfaction,
     regulars
-  }).slice(0, 6); // 최대 6개 표시
+  }); // 조건 충족한 모든 게임 표시, 중복 구매 허용
 
   const availableGamesForRecommend = selectedTable ? uniqueGames.filter(game => {
     const table = tablesManagerRef.current.getTable(selectedTable);
@@ -1025,12 +1091,16 @@ const executeEvent = (eventType) => {
     availablePurchases, availableGamesForRecommend, selectedTable, currentWeeklyGame,
     regularNewsBonus, regularNewsBonusDays, currentRegularNews, recentReviews, isRegularsLoaded,
     currentWeek, currentCommunityNews, trendingGames, hasNewCommunityNews,
+    recommendList, selectedGameInfo,
+    newVisitorBoost, permanentEventBonus, permanentDiscountRate, perfectServiceBonus, // 🆕 마일스톤 효과
     gamesManager: gamesManagerRef.current, // 🆕 게임 매니저 전달
     communityManager: communityManagerRef.current, // 🆕 커뮤니티 매니저 전달
+    buffManager: buffManagerRef.current, // 🆕 버프 매니저 전달
     openModal, closeModal, handleTableClick, handlePurchaseGame,
     handleRecommendGame, executeEvent, handleAIAccept, handleAIReject,
     handlePauseToggle, handleSpeedChange, handleAddTable,
     handleRegularsClick, handleAcceptRegularNews, handleRejectRegularNews, handleShowReviews,
     handleOpenTrade, handleTradeGames, handleOpenCommunityNews,
+    handleOpenManageRecommendList, handleSaveRecommendList, handleOpenGameRecommend, handleRecommendFromList,
   };
 };

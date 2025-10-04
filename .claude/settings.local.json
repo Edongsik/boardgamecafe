@@ -5,7 +5,9 @@
       "Bash(npx tailwindcss init:*)",
       "Bash(npm uninstall:*)",
       "Bash(npm run dev:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []
