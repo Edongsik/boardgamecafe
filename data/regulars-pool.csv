@@ -1,0 +1,11 @@
+name,personality,favoriteGenre,abilityType,abilityValue,description,avatar,newsType,newsFrequency,newsBonusType,newsBonusValue,newsDuration
+지민,열정적,전략,visitor_boost,5,항상 친구들을 데려오는 열정적인 손님,😊,game_trend,7,recommendation_boost,10,5
+서준,까다로운,추리,relationship_sensitive,2,추천에 민감하지만 만족하면 큰 보상,😤,competitor_info,10,event_boost,15,3
+하은,분석적,덱빌딩,success_rate_info,10,데이터 분석을 좋아하는 손님,🤓,customer_preference,7,success_rate,15,7
+도윤,사교적,파티,friend_invite,3,사교모임을 자주 여는 손님,😄,event_idea,7,event_success,25,5
+지우,수집가,전략,rare_game_info,1,희귀 게임을 찾는 수집가,🧐,rare_game_info,14,game_discount,50,7
+민서,초보자,파티,easy_game_boost,15,보드게임을 처음 접한 초보자,😇,customer_preference,7,easy_game_boost,20,7
+시우,베테랑,전략,hard_game_boost,15,어려운 게임을 즐기는 베테랑,😎,ai_warning,7,ai_insight,30,3
+서연,친절한,협력,relationship_boost,5,항상 긍정적인 마음가짐,🥰,customer_mood,7,satisfaction_boost,10,10
+예준,경쟁적,대전,tournament_boost,20,대회를 좋아하는 경쟁자,🔥,event_idea,10,tournament_boost,30,5
+채원,창의적,창작,new_game_discount,10,신작 게임에 관심 많음,✨,market_trend,14,purchase_discount,20,7

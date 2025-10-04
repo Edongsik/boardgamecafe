@@ -1,0 +1,21 @@
+week,newsType,title,content,trendingGames,effect,importance,icon
+1,trend,새해 파티게임 열풍,새해를 맞아 대형 파티게임이 인기입니다,"킹 오브 도쿄,디셉션,캐럿",party_boost,medium,🎉
+2,review,윙스팬 재평가,BGC 커뮤니티에서 윙스팬을 재조명하고 있습니다,윙스팬,satisfaction_maintain,high,⭐
+3,warning,협력게임 포화,협력게임 시장이 포화 상태입니다,"팬데믹,글룸헤이븐",coop_penalty,medium,⚠️
+4,trend,전략게임 붐,깊이있는 전략게임이 다시 주목받고 있습니다,"카탄,스플렌더,7 Wonders",strategy_boost,high,📈
+5,event,보드게임 페스티벌,다음주 보드게임 페스티벌 개최 예정,,event_boost,low,🎪
+6,market,신작 출시 러시,이번 달 신작 게임이 대거 출시됩니다,,new_game_interest,medium,🆕
+7,community,초보자 유입 증가,신규 유저들이 커뮤니티에 많이 들어오고 있습니다,"할리갈리,젠가,블로커스",beginner_boost,medium,👶
+8,trend,추리게임 인기,추리 장르가 다시 주목받고 있습니다,"디셉션,다빈치코드,인사이더 게임",detective_boost,high,🔍
+9,review,코드네임 클래식,코드네임이 여전히 최고의 파티게임으로 평가받고 있습니다,코드네임,classic_boost,high,🏆
+10,warning,전략게임 피로도,너무 복잡한 전략게임에 피로감을 느끼는 유저 증가,"아그리콜라,테라포밍 마스",heavy_penalty,medium,😓
+11,trend,가족게임 주목,가족과 함께 즐기는 게임이 인기입니다,"티켓투라이드,블로커스,루미큐브",family_boost,medium,👨‍👩‍👧‍👦
+12,event,크라우드펀딩 성공,여러 신작 게임이 펀딩에 성공했습니다,,crowdfunding_boost,low,💰
+13,community,대회 시즌,각종 보드게임 대회가 개최되고 있습니다,"원나잇 인랑,스컬킹,도미니언",tournament_boost,medium,🏅
+14,trend,덱빌딩 열풍,덱빌딩 메커니즘이 다시 주목받고 있습니다,"도미니언,윙스팬,7 Wonders",deckbuilding_boost,high,🎴
+15,review,아줄 예술성 재조명,아줄의 아름다운 디자인이 다시 화제입니다,아줄,aesthetic_boost,medium,🎨
+16,warning,인랑 게임 과열,인랑류 게임에 대한 피로감 증가,원나잇 인랑,werewolf_penalty,low,🐺
+17,trend,협력게임 재평가,협력 메커니즘의 중요성이 재조명되고 있습니다,팬데믹,coop_boost,high,🤝
+18,market,중고거래 활성화,보드게임 중고거래 시장이 활발합니다,,trade_boost,medium,🔄
+19,community,스트리머 방송 증가,보드게임 스트리밍이 인기를 끌고 있습니다,"코드네임,디셉션,킹 오브 도쿄",streaming_boost,high,📺
+20,trend,추상전략 재발견,추상전략게임이 다시 주목받고 있습니다,"블로커스,쿼리도",abstract_boost,low,🧩
