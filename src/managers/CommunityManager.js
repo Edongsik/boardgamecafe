@@ -12,7 +12,7 @@ class CommunityManager {
   // CSV 파일에서 커뮤니티 뉴스 로드
   async loadCommunityNews() {
     try {
-      const response = await fetch('/data/community-news.csv');
+      const response = await fetch(`${import.meta.env.BASE_URL}data/community-news.csv`);
       const csvText = await response.text();
 
       return new Promise((resolve, reject) => {

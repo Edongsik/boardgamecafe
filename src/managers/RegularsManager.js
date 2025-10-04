@@ -14,10 +14,10 @@ class RegularsManager {
   // CSV 파일에서 단골 손님 풀 로드
   async loadRegularsPool() {
     try {
-      const poolResponse = await fetch('/data/regulars-pool.csv');
+      const poolResponse = await fetch(`${import.meta.env.BASE_URL}data/regulars-pool.csv`);
       const poolCsvText = await poolResponse.text();
 
-      const newsResponse = await fetch('/data/regular-news-templates.csv');
+      const newsResponse = await fetch(`${import.meta.env.BASE_URL}data/regular-news-templates.csv`);
       const newsCsvText = await newsResponse.text();
 
       const poolPromise = new Promise((resolve, reject) => {

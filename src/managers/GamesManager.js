@@ -11,10 +11,10 @@ class GamesManager {
   // CSV 파일에서 게임 풀 로드
   async loadGamesPool() {
     try {
-      const gamesResponse = await fetch('/data/games-pool.csv');
+      const gamesResponse = await fetch(`${import.meta.env.BASE_URL}data/games-pool.csv`);
       const gamesCsvText = await gamesResponse.text();
 
-      const purchasableResponse = await fetch('/data/purchasable-games.csv');
+      const purchasableResponse = await fetch(`${import.meta.env.BASE_URL}data/purchasable-games.csv`);
       const purchasableCsvText = await purchasableResponse.text();
 
       const gamesPromise = new Promise((resolve, reject) => {
