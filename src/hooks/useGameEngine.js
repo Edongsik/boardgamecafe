@@ -44,6 +44,11 @@ export const useGameEngine = () => {
   const [currentRegularNews, setCurrentRegularNews] = useState(null);
   const [isRegularsLoaded, setIsRegularsLoaded] = useState(false);
 
+  // --- 방문자 마일스톤 효과 상태 ---
+  const [newVisitorBoost, setNewVisitorBoost] = useState({ active: false, multiplier: 1, daysRemaining: 0 });
+  const [permanentEventBonus, setPermanentEventBonus] = useState(0);
+  const [permanentDiscountRate, setPermanentDiscountRate] = useState(0);
+
   // --- UI 상태 ---
   const [modalState, setModalState] = useState({
     event: false, gamePurchase: false, result: false, eventSelection: false, regularNews: false, reviews: false, tradeGames: false, communityNews: false,
@@ -57,6 +62,68 @@ export const useGameEngine = () => {
   const hasExpandedTo5Tables = useRef(false);
   const lastVisitorMilestone = useRef(0);
   const lastCommunityWeek = useRef(0);
+
+  // --- 방문자 마일스톤 설정 ---
+  const visitorMilestones = [
+    {
+      visitors: 50,
+      type: 'buzz',
+      reward: {
+        satisfaction: 5,
+        message: '🎉 입소문 효과',
+        description: '첫 50명 방문 달성!\n입소문이 퍼지며 카페 분위기가 좋아졌습니다.'
+      }
+    },
+    {
+      visitors: 100,
+      type: 'first_hundred',
+      reward: {
+        funds: 500000,
+        regulars: 1,
+        discardGame: true,
+        message: '💯 첫 100명 달성',
+        description: '축하합니다! 100명 방문 달성!\n보상: 자금 +₩500,000, 단골손님 +1명'
+      }
+    },
+    {
+      visitors: 200,
+      type: 'media',
+      reward: {
+        newVisitorBoost: { multiplier: 1.5, duration: 3 },
+        message: '📰 지역 언론 보도',
+        description: '지역 언론에 소개되었습니다!\n3일간 신규 방문자 1.5배 증가'
+      }
+    },
+    {
+      visitors: 300,
+      type: 'bonus_game',
+      reward: {
+        freeGame: true,
+        discardGame: true,
+        message: '🎁 무료 게임 획득',
+        description: '300명 방문 달성!\n랜덤 게임 1개 무료 획득'
+      }
+    },
+    {
+      visitors: 500,
+      type: 'permanent_bonus',
+      reward: {
+        permanentEventBonus: 10,
+        regulars: 2,
+        message: '⭐ 명성 확립',
+        description: '500명 방문 달성!\n영구 이벤트 성공률 +10%, 단골손님 +2명'
+      }
+    },
+    {
+      visitors: 1000,
+      type: 'legendary',
+      reward: {
+        permanentDiscountRate: 10,
+        message: '🏆 전설의 카페',
+        description: '1000명 방문 달성!\n영구 게임 구매 할인 10%, 게임 종료 또는 엔딩 메시지'
+      }
+    }
+  ];
 
   const gameTickCallback = useRef(() => {});
 
@@ -275,7 +342,14 @@ useEffect(() => {
       if (eventResult.didChange) {
           setTables(tablesManagerRef.current.getTables());
           if (eventResult.newVisitor) {
-            setTotalVisitors(prev => prev + Math.floor(Math.random() * 2) + 2);
+            // 🆕 방문자 부스트 적용
+            const baseVisitors = Math.floor(Math.random() * 2) + 2;
+            const boostedVisitors = newVisitorBoost.active
+              ? Math.floor(baseVisitors * newVisitorBoost.multiplier)
+              : baseVisitors;
+
+            setTotalVisitors(prev => prev + boostedVisitors);
+
             // 🔻 평점에 따라 신규 방문 시 만족도 변화
             setSatisfaction(prev => {
               const rating = prev / 10;
@@ -355,6 +429,17 @@ useEffect(() => {
     // 뉴스 보너스 만료 체크
     regularsManagerRef.current.checkNewsExpiry(day);
 
+    // 🆕 방문자 부스트 카운트다운
+    if (newVisitorBoost.active && newVisitorBoost.daysRemaining > 0) {
+      setNewVisitorBoost(prev => {
+        const newDaysRemaining = prev.daysRemaining - 1;
+        if (newDaysRemaining === 0) {
+          return { active: false, multiplier: 1, daysRemaining: 0 };
+        }
+        return { ...prev, daysRemaining: newDaysRemaining };
+      });
+    }
+
     // 🆕 주차별 커뮤니티 뉴스 업데이트
     const currentWeek = Math.floor(day / 7) + 1;
     if (currentWeek > lastCommunityWeek.current && communityManagerRef.current.isLoaded) {
@@ -382,20 +467,82 @@ useEffect(() => {
   }, [modalState, selectedTable]);
 
   useEffect(() => {
-    const currentMilestone = Math.floor(totalVisitors / 100);
-    if (currentMilestone > lastVisitorMilestone.current && totalVisitors >= 100) {
-      lastVisitorMilestone.current = currentMilestone;
+    // 방문자 마일스톤 체크
+    for (const milestone of visitorMilestones) {
+      if (totalVisitors >= milestone.visitors && lastVisitorMilestone.current < milestone.visitors) {
+        lastVisitorMilestone.current = milestone.visitors;
 
-      const mostUsed = gamesManagerRef.current.getMostRecommendedGame();
-      if (mostUsed) {
-        gamesManagerRef.current.removeGame(mostUsed.name);
-        setOwnedGames(gamesManagerRef.current.getOwnedGames());
-        showResult('warning', '🗑️ 게임 폐기',
-          `${mostUsed.name}이(가) 너무 많이 사용되어 낡았습니다.\n` +
-          `추천 횟수: ${mostUsed.recommendCount}회\n` +
-          `누적 방문자: ${totalVisitors}명\n\n` +
-          `💡 힌트: 중고거래를 통해 새 게임으로 교환할 수 있습니다!`
-        );
+        const reward = milestone.reward;
+        let resultContent = reward.description;
+
+        // 만족도 증가
+        if (reward.satisfaction) {
+          setSatisfaction(prev => Math.min(100, prev + reward.satisfaction));
+        }
+
+        // 자금 증가
+        if (reward.funds) {
+          setFunds(prev => prev + reward.funds);
+        }
+
+        // 단골손님 증가
+        if (reward.regulars) {
+          setRegulars(prev => {
+            const newCount = prev + reward.regulars;
+            for (let i = 0; i < reward.regulars; i++) {
+              regularsManagerRef.current.addRegular();
+            }
+            return newCount;
+          });
+        }
+
+        // 게임 폐기
+        if (reward.discardGame) {
+          const mostUsed = gamesManagerRef.current.getMostRecommendedGame();
+          if (mostUsed) {
+            gamesManagerRef.current.removeGame(mostUsed.name);
+            setOwnedGames(gamesManagerRef.current.getOwnedGames());
+            resultContent += `\n\n🗑️ ${mostUsed.name} 폐기 (추천 ${mostUsed.recommendCount}회)`;
+          }
+        }
+
+        // 신규 방문자 부스트
+        if (reward.newVisitorBoost) {
+          setNewVisitorBoost({
+            active: true,
+            multiplier: reward.newVisitorBoost.multiplier,
+            daysRemaining: reward.newVisitorBoost.duration
+          });
+        }
+
+        // 무료 게임
+        if (reward.freeGame) {
+          const availableGames = gamesManagerRef.current.getPurchasableGames({
+            day,
+            totalVisitors,
+            satisfaction,
+            regulars
+          });
+          if (availableGames.length > 0) {
+            const randomGame = availableGames[Math.floor(Math.random() * availableGames.length)];
+            gamesManagerRef.current.addGame({ name: randomGame.name, difficulty: randomGame.difficulty || 3 });
+            setOwnedGames(gamesManagerRef.current.getOwnedGames());
+            resultContent += `\n\n🎁 ${randomGame.name} 획득!`;
+          }
+        }
+
+        // 영구 이벤트 보너스
+        if (reward.permanentEventBonus) {
+          setPermanentEventBonus(reward.permanentEventBonus);
+        }
+
+        // 영구 할인율
+        if (reward.permanentDiscountRate) {
+          setPermanentDiscountRate(reward.permanentDiscountRate);
+        }
+
+        showResult('immediate', reward.message, resultContent);
+        break;
       }
     }
   }, [totalVisitors]);
@@ -422,14 +569,25 @@ useEffect(() => {
   };
 
   const handlePurchaseGame = (game) => {
-    if ((revenue + funds) < game.cost) {
+    // 🆕 영구 할인율 적용
+    const discountRate = permanentDiscountRate / 100;
+    const discountedCost = Math.floor(game.cost * (1 - discountRate));
+    const finalCost = discountedCost;
+
+    if ((revenue + funds) < finalCost) {
       showResult('negative', '💸 자금 부족', `${game.name} 구매 자금 부족`);
       return;
     }
-    handleExpense(game.cost);
+
+    handleExpense(finalCost);
     gamesManagerRef.current.addGame({ name: game.name, difficulty: game.difficulty || 3 });
     setOwnedGames(gamesManagerRef.current.getOwnedGames());
-    showResult('immediate', `🎉 ${game.name} 구매 완료!`, `새로운 게임 입고!`);
+
+    const message = permanentDiscountRate > 0
+      ? `새로운 게임 입고!\n원가: ₩${formatNumber(game.cost)}\n할인가: ₩${formatNumber(finalCost)} (-${permanentDiscountRate}%)`
+      : `새로운 게임 입고!`;
+
+    showResult('immediate', `🎉 ${game.name} 구매 완료!`, message);
     closeModal('gamePurchase');
   };
   
@@ -567,26 +725,33 @@ const executeEvent = (eventType) => {
   }
   
   // 🎯 이벤트 성공 단계 결정 (1~3단계)
+  // 🆕 영구 이벤트 보너스 적용
+  const bonusRate = permanentEventBonus / 100;
   const successRoll = Math.random();
   let successLevel;
   let resultType;
   let resultTitle;
   let resultContent;
-  
-  if (successRoll < 0.15) {
-    // 15% 확률 - 실패
+
+  // 성공 확률 조정 (보너스 적용 시 실패 확률 감소)
+  const failureThreshold = Math.max(0, 0.15 - bonusRate);
+  const tier1Threshold = failureThreshold + 0.35;
+  const tier2Threshold = tier1Threshold + 0.35;
+
+  if (successRoll < failureThreshold) {
+    // 실패 (보너스로 감소)
     successLevel = 0;
     resultType = 'negative';
-  } else if (successRoll < 0.50) {
+  } else if (successRoll < tier1Threshold) {
     // 35% 확률 - 1단계 성공
     successLevel = 1;
     resultType = 'neutral';
-  } else if (successRoll < 0.85) {
+  } else if (successRoll < tier2Threshold) {
     // 35% 확률 - 2단계 성공
     successLevel = 2;
     resultType = 'immediate';
   } else {
-    // 15% 확률 - 3단계 대성공
+    // 대성공 (보너스로 증가)
     successLevel = 3;
     resultType = 'immediate';
   }
