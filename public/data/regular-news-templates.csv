@@ -1,0 +1,24 @@
+newsType,personality,message,riskLevel,acceptBenefit,rejectConsequence
+game_trend,열정적,요즘 협력 게임이 대세래요! 다들 협력 게임 찾더라구요.,low,협력 게임 추천 성공률 증가,없음
+game_trend,분석적,데이터 분석 결과 전략 게임 수요가 급증하고 있어요.,low,전략 게임 추천 성공률 증가,없음
+game_trend,사교적,친구들이 파티 게임 추천해달라고 계속 물어봐요!,low,파티 게임 추천 성공률 증가,없음
+competitor_info,까다로운,옆 카페가 할인 이벤트 한대요. 우리도 뭔가 해야 할 것 같아요.,medium,선제 이벤트 효과 +15%,방문객 소폭 감소
+competitor_info,분석적,경쟁 카페의 약점을 발견했어요. 지금이 기회예요!,medium,이벤트 효과 +20%,기회 상실
+competitor_info,베테랑,다른 카페들이 신작 게임을 대량 입고했대요.,high,긴급 구매 추천,경쟁 열세
+customer_preference,사교적,신규 손님들이 파티 게임을 많이 좋아하더라구요.,low,파티 게임 추천 +20%,없음
+customer_preference,분석적,최근 손님들 패턴을 분석해봤는데 난이도 2-3이 최적이에요.,low,난이도 매칭 성공률 증가,없음
+customer_preference,초보자,요즘 보드게임 처음 하는 사람들이 많이 와요.,low,초보자용 게임 추천 +25%,없음
+ai_warning,베테랑,이번 AI 추천 게임 너무 어려울 것 같은데요?,high,AI 거절 추천 (위험 회피),수용 시 만족도 큰 하락
+ai_warning,분석적,AI가 추천한 게임 평점이 의심스러워요.,medium,신중한 판단 권장,잘못된 결정 가능성
+ai_warning,까다로운,이 게임 제 취향이 아닌데 AI는 왜 추천했을까요?,medium,재고려 제안,기회 놓칠 수도
+rare_game_info,수집가,한정판 게임 입고 정보를 입수했어요! 지금이 기회예요!,medium,희귀 게임 50% 할인,한정판 품절
+rare_game_info,창의적,곧 단종될 게임이 있다는 소식 들었어요.,high,마지막 구매 기회,영구 품절
+event_idea,친절한,주말에 대회 열면 대박날 것 같아요!,low,대회 성공률 +25%,없음
+event_idea,경쟁적,토너먼트 이벤트 열면 제가 친구들 다 데려올게요!,low,토너먼트 효과 +30%,없음
+event_idea,사교적,다음주에 보드게임 모임 있는데 장소 빌려주시면 홍보해드릴게요.,medium,대규모 방문 예상,기회 상실
+market_trend,창의적,신작 게임들이 다음 주에 가격 인상한대요.,high,지금 구매 추천,비용 증가
+market_trend,수집가,이번 달 말에 게임 할인 행사 있을 거예요.,low,구매 연기 추천,조급한 구매 방지
+market_trend,분석적,시장 분석 결과 지금이 게임 구매 최적기예요.,medium,구매 타이밍 안내,기회 상실
+customer_mood,친절한,오늘 카페 분위기 정말 좋아요! 손님들 만족도 높을 것 같아요.,low,만족도 상승 효과,없음
+customer_mood,열정적,다들 정말 즐거워하고 있어요! 이런 날은 특별해요.,low,평점 상승 버프,없음
+customer_mood,사교적,분위기가 좋아서 친구들한테 추천하고 싶어요!,medium,입소문 효과,없음
